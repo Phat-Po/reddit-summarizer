@@ -172,6 +172,12 @@ async function handleStreamGenerate(port, request) {
   }
 }
 
+// ─── Extension Icon Click ─────────────────────────────────────────────────────
+
+chrome.action.onClicked.addListener(function() {
+  chrome.tabs.create({ url: chrome.runtime.getURL('settings/settings.html') });
+});
+
 // ─── One-shot Messages ────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
