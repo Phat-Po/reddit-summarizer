@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extension Settings</title><!-- FILL_IN: extension name -->
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <h1 class="page-header__title">Extension Settings</h1><!-- FILL_IN -->
+    </header>
+
+    <main class="page-main">
+
+      <!-- 1. API Keys -->
+      <section class="card" id="section-apikeys">
+        <h2 class="card__title">1. API 金鑰</h2>
+
+        <div class="key-row">
+          <label class="key-label" for="key-anthropic">Anthropic API 金鑰</label>
+          <div class="key-input-group">
+            <input type="password" id="key-anthropic" class="key-input"
+                   placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+            <button type="button" class="btn-icon" data-toggle="key-anthropic">👁</button>
+          </div>
+          <div class="key-actions">
+            <span class="key-status" id="status-anthropic"></span>
+            <button type="button" class="btn-primary" data-provider="anthropic" id="save-anthropic">儲存並驗證</button>
+          </div>
+        </div>
+
+        <div class="key-row">
+          <label class="key-label" for="key-openai">OpenAI API 金鑰</label>
+          <div class="key-input-group">
+            <input type="password" id="key-openai" class="key-input"
+                   placeholder="sk-..." autocomplete="off" spellcheck="false">
+            <button type="button" class="btn-icon" data-toggle="key-openai">👁</button>
+          </div>
+          <div class="key-actions">
+            <span class="key-status" id="status-openai"></span>
+            <button type="button" class="btn-primary" data-provider="openai" id="save-openai">儲存並驗證</button>
+          </div>
+        </div>
+
+        <p class="note">🔒 金鑰僅儲存於本機瀏覽器，不會上傳至任何伺服器。</p>
+      </section>
+
+      <!-- 2. Model Selection -->
+      <section class="card" id="section-model">
+        <h2 class="card__title">2. AI 模型</h2>
+        <div class="row">
+          <label for="select-model">模型</label>
+          <select id="select-model"><!-- populated by JS --></select>
+          <span id="model-hint" class="hint"></span>
+        </div>
+      </section>
+
+      <!-- 3. Default System Instruction -->
+      <section class="card" id="section-instruction">
+        <h2 class="card__title">3. 預設系統指令</h2>
+        <p class="card__desc">每次開啟 AI 面板時自動填入，可臨時修改。</p>
+        <textarea id="default-instruction" class="instruction-textarea"
+                  placeholder="輸入 AI 系統指令..." rows="10"></textarea>
+        <div class="card-actions">
+          <button type="button" class="btn-primary" id="save-instruction">儲存指令</button>
+          <span class="save-indicator" id="instruction-saved"></span>
+        </div>
+      </section>
+
+      <!-- 4. Usage -->
+      <section class="card" id="section-usage">
+        <h2 class="card__title">4. 使用紀錄</h2>
+        <div class="usage-grid">
+          <div class="usage-row"><span>今日呼叫次數</span><strong id="today-calls">—</strong></div>
+          <div class="usage-row"><span>今日輸入 Token</span><strong id="today-input">—</strong></div>
+          <div class="usage-row"><span>今日輸出 Token</span><strong id="today-output">—</strong></div>
+          <div class="usage-row usage-row--cost"><span>今日預估費用</span><strong id="today-cost">—</strong></div>
+        </div>
+        <button type="button" class="btn-outline" id="btn-reset-usage">重設今日計數</button>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="../model-config.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>
