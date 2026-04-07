@@ -26,36 +26,71 @@ var _SYS_POST_SHORT =
   'You are a helpful assistant. Summarize the following Reddit post in 2-3 ' +
   'clear, concise sentences. Focus on the main topic and key points.';
 
-var _SYS_POST_LONG =
-  'You are a helpful assistant. Summarize the following Reddit post using ' +
-  'this exact plain-text format (no markdown, no asterisks):\n\n' +
-  '2-3 sentence summary.\n\n' +
-  'Key Takeaways:\n' +
-  '• [most important point]\n' +
-  '• [second point]\n' +
-  '• [third point]\n\n' +
-  'Keep every point to one line. Be concise — no filler.';
-
 var _SYS_DISC_SHORT =
   'You are a helpful assistant. Summarize the key discussion points from ' +
   'the following Reddit comments in 3-5 bullet points. Capture the main ' +
   'opinions, insights, and any consensus or disagreement.';
 
-var _SYS_DISC_LONG_TPL =
-  'You are a helpful assistant. Analyze the following Reddit discussion ' +
-  'using this exact plain-text format (no markdown, no asterisks):\n\n' +
-  'Vibe: [one word or short phrase: Consensus / Divided / Heated / Mostly positive / Skeptical / etc.]  ·  {{COUNT}} comments\n\n' +
-  '[2-sentence overview of what the discussion is about and the general tone.]\n\n' +
-  'Thread Analysis:\n' +
-  '• [main viewpoint or camp A]\n' +
-  '• [main viewpoint or camp B]\n' +
-  '• [third angle or sub-topic if present]\n\n' +
-  'Interaction Pattern: [1 sentence — how people are engaging, e.g. agreement, debate, tangents, humor]\n\n' +
-  'Notable Quotes:\n' +
-  '"[most insightful or representative quote from the comments]"\n' +
-  '"[second notable quote]"\n' +
-  '"[third notable quote]"\n\n' +
-  'Keep every section tight. No filler sentences. Omit a section only if truly not applicable.';
+// ─── Localized Labels ─────────────────────────────────────────────────────────
+
+function _getLabels(lang) {
+  if (lang === 'zh-TW') return {
+    keyTakeaways:       '重點摘要：',
+    vibe:               '氛圍：',
+    threadAnalysis:     '討論分析：',
+    interactionPattern: '互動模式：',
+    notableQuotes:      '精彩留言：',
+    comments:           '則留言'
+  };
+  if (lang === 'zh-CN') return {
+    keyTakeaways:       '重点摘要：',
+    vibe:               '氛围：',
+    threadAnalysis:     '讨论分析：',
+    interactionPattern: '互动模式：',
+    notableQuotes:      '精彩留言：',
+    comments:           '条评论'
+  };
+  return {
+    keyTakeaways:       'Key Takeaways:',
+    vibe:               'Vibe:',
+    threadAnalysis:     'Thread Analysis:',
+    interactionPattern: 'Interaction Pattern:',
+    notableQuotes:      'Notable Quotes:',
+    comments:           'comments'
+  };
+}
+
+function _buildSysPostLong(L) {
+  return (
+    'You are a helpful assistant. Summarize the following Reddit post using ' +
+    'this exact plain-text format (no markdown, no asterisks):\n\n' +
+    '2-3 sentence summary.\n\n' +
+    L.keyTakeaways + '\n' +
+    '• [most important point]\n' +
+    '• [second point]\n' +
+    '• [third point]\n\n' +
+    'Keep every point to one line. Be concise — no filler.'
+  );
+}
+
+function _buildSysDiscLong(L, count) {
+  return (
+    'You are a helpful assistant. Analyze the following Reddit discussion ' +
+    'using this exact plain-text format (no markdown, no asterisks):\n\n' +
+    L.vibe + ' [one word or short phrase: Consensus / Divided / Heated / Mostly positive / Skeptical / etc.]  ·  ' + count + ' ' + L.comments + '\n\n' +
+    '[2-sentence overview of what the discussion is about and the general tone.]\n\n' +
+    L.threadAnalysis + '\n' +
+    '• [main viewpoint or camp A]\n' +
+    '• [main viewpoint or camp B]\n' +
+    '• [third angle or sub-topic if present]\n\n' +
+    L.interactionPattern + ' [1 sentence — how people are engaging, e.g. agreement, debate, tangents, humor]\n\n' +
+    L.notableQuotes + '\n' +
+    '"[most insightful or representative quote from the comments]"\n' +
+    '"[second notable quote]"\n' +
+    '"[third notable quote]"\n\n' +
+    'Keep every section tight. No filler sentences. Omit a section only if truly not applicable.'
+  );
+}
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -116,9 +151,11 @@ function _summarize() {
     var title = (findPostTitle() || '').trim();
     var body  = (findPostBody()  || '').trim();
 
-    var meta = findPostMeta();
+    var meta   = findPostMeta();
+    var labels = _getLabels(data.language);
+
     var isLongPost = body.length > _LONG_POST_CHARS;
-    var sysPost = (isLongPost ? _SYS_POST_LONG : _SYS_POST_SHORT) + langSuffix;
+    var sysPost = (isLongPost ? _buildSysPostLong(labels) : _SYS_POST_SHORT) + langSuffix;
 
     // ── Post Summary ──────────────────────────────────────────────────────────
     _panel.setLoading('post');
@@ -151,8 +188,7 @@ function _summarize() {
 
         var threadCount  = meta.commentCount > 0 ? meta.commentCount : comments.length;
         var isLongThread = threadCount > _LONG_THREAD_COUNT;
-        var sysDiscLong  = _SYS_DISC_LONG_TPL.replace('{{COUNT}}', threadCount);
-        var sysDisc = (isLongThread ? sysDiscLong : _SYS_DISC_SHORT) + langSuffix;
+        var sysDisc = (isLongThread ? _buildSysDiscLong(labels, threadCount) : _SYS_DISC_SHORT) + langSuffix;
 
         var commentText = comments
           .slice(0, _MAX_COMMENTS)
