@@ -9,7 +9,7 @@
 //   3. Auto-trigger AI summarization on load and SPA navigation
 //   4. Stream AI response into panel sections (Post Summary + Discussion)
 //
-// Storage: reads from chrome.storage.local (Task 6 migrates both sides to .sync)
+// Storage: reads apiKeys, selectedModel, language from chrome.storage.sync
 
 'use strict';
 
@@ -57,7 +57,7 @@ function _summarize() {
   if (_running) return;
   _running = true;
 
-  chrome.storage.local.get(['apiKeys', 'selectedModel'], function(data) {
+  chrome.storage.sync.get(['apiKeys', 'selectedModel', 'language'], function(data) {
     var keys  = data.apiKeys || {};
     var model = data.selectedModel || EXT_MODEL_OPTIONS[0].id;
     var modelCfg = EXT_MODEL_OPTIONS.find(function(m) { return m.id === model; });
@@ -70,6 +70,13 @@ function _summarize() {
       _running = false;
       return;
     }
+
+    var langSuffix = '';
+    if (data.language === 'zh-TW') langSuffix = ' Respond in Traditional Chinese (繁體中文).';
+    else if (data.language === 'zh-CN') langSuffix = ' Respond in Simplified Chinese (简体中文).';
+
+    var sysPost = _SYS_POST + langSuffix;
+    var sysDisc = _SYS_DISCUSSION + langSuffix;
 
     // Extract title + body now; delay comment extraction until post stream
     // completes so Reddit has time to render comments into the DOM.
@@ -86,7 +93,7 @@ function _summarize() {
       provider:     provider,
       model:        model,
       apiKey:       apiKey,
-      systemPrompt: _SYS_POST,
+      systemPrompt: sysPost,
       userMessage:  postMsg,
       maxTokens:    400,
       temperature:  0.5,
@@ -116,7 +123,7 @@ function _summarize() {
           provider:     provider,
           model:        model,
           apiKey:       apiKey,
-          systemPrompt: _SYS_DISCUSSION,
+          systemPrompt: sysDisc,
           userMessage:  discMsg,
           maxTokens:    500,
           temperature:  0.5,

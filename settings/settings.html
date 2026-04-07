@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Extension Settings</title><!-- FILL_IN: extension name -->
+  <title>Reddit Summarizer — Settings</title>
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
   <div class="page">
 
     <header class="page-header">
-      <h1 class="page-header__title">Extension Settings</h1><!-- FILL_IN -->
+      <h1 class="page-header__title">Reddit Summarizer — Settings</h1>
     </header>
 
     <main class="page-main">
@@ -58,15 +58,16 @@
         </div>
       </section>
 
-      <!-- 3. Default System Instruction -->
-      <section class="card" id="section-instruction">
-        <h2 class="card__title">3. 預設系統指令</h2>
-        <p class="card__desc">每次開啟 AI 面板時自動填入，可臨時修改。</p>
-        <textarea id="default-instruction" class="instruction-textarea"
-                  placeholder="輸入 AI 系統指令..." rows="10"></textarea>
-        <div class="card-actions">
-          <button type="button" class="btn-primary" id="save-instruction">儲存指令</button>
-          <span class="save-indicator" id="instruction-saved"></span>
+      <!-- 3. Language -->
+      <section class="card" id="section-language">
+        <h2 class="card__title">3. 摘要語言</h2>
+        <div class="row">
+          <label for="select-language">回應語言</label>
+          <select id="select-language">
+            <option value="en">English</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="zh-CN">简体中文</option>
+          </select>
         </div>
       </section>
 

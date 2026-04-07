@@ -1,10 +1,10 @@
 // settings.js — Settings page logic
-// Generic template. Works with settings.html as-is.
 
 'use strict';
 
 document.addEventListener('DOMContentLoaded', function() {
   _buildModelDropdown();
+  _buildLanguageDropdown();
   _loadAll();
   _bindHandlers();
   _watchStorage();
@@ -21,7 +21,7 @@ function _buildModelDropdown() {
     select.appendChild(opt);
   });
   select.addEventListener('change', function() {
-    chrome.storage.local.set({ selectedModel: select.value });
+    chrome.storage.sync.set({ selectedModel: select.value });
     _updateModelHint(select.value);
   });
 }
@@ -32,10 +32,20 @@ function _updateModelHint(modelId) {
   if (hint) hint.textContent = m ? '供應商：' + (m.provider === 'anthropic' ? 'Anthropic' : 'OpenAI') : '';
 }
 
+// ─── Language Dropdown ────────────────────────────────────────────────────────
+
+function _buildLanguageDropdown() {
+  var select = document.getElementById('select-language');
+  if (!select) return;
+  select.addEventListener('change', function() {
+    chrome.storage.sync.set({ language: select.value });
+  });
+}
+
 // ─── Load All Settings ────────────────────────────────────────────────────────
 
 function _loadAll() {
-  chrome.storage.local.get(['apiKeys', 'selectedModel', 'defaultInstruction', 'usageToday'], function(data) {
+  chrome.storage.sync.get(['apiKeys', 'selectedModel', 'language'], function(data) {
     var keys = data.apiKeys || {};
     if (keys.anthropic) { document.getElementById('key-anthropic').value = keys.anthropic; _setStatus('anthropic', 'valid', '✓ 已設定'); }
     if (keys.openai)    { document.getElementById('key-openai').value    = keys.openai;    _setStatus('openai',    'valid', '✓ 已設定'); }
@@ -44,8 +54,11 @@ function _loadAll() {
     document.getElementById('select-model').value = model;
     _updateModelHint(model);
 
-    document.getElementById('default-instruction').value = data.defaultInstruction || '';
+    var langSelect = document.getElementById('select-language');
+    if (langSelect) langSelect.value = data.language || 'en';
+  });
 
+  chrome.storage.local.get(['usageToday'], function(data) {
     _renderUsage(data.usageToday || null);
   });
 }
@@ -68,18 +81,6 @@ function _bindHandlers() {
     btn.addEventListener('click', function() { _saveKey(provider, btn); });
   });
 
-  // Save system instruction
-  var saveInstrBtn = document.getElementById('save-instruction');
-  if (saveInstrBtn) {
-    saveInstrBtn.addEventListener('click', function() {
-      var text = document.getElementById('default-instruction').value;
-      chrome.storage.local.set({ defaultInstruction: text }, function() {
-        var ind = document.getElementById('instruction-saved');
-        if (ind) { ind.textContent = '✓ 已儲存'; setTimeout(function() { ind.textContent = ''; }, 2000); }
-      });
-    });
-  }
-
   // Reset usage
   var resetBtn = document.getElementById('btn-reset-usage');
   if (resetBtn) {
@@ -97,10 +98,10 @@ function _saveKey(provider, btn) {
   var key = input.value.trim();
   if (!key) { _setStatus(provider, 'invalid', '✗ 請輸入金鑰'); return; }
 
-  chrome.storage.local.get(['apiKeys'], function(data) {
+  chrome.storage.sync.get(['apiKeys'], function(data) {
     var keys = data.apiKeys || {};
     keys[provider] = key;
-    chrome.storage.local.set({ apiKeys: keys });
+    chrome.storage.sync.set({ apiKeys: keys });
   });
 
   _setStatus(provider, 'loading', '⏳ 驗證中…');
@@ -129,9 +130,19 @@ function _renderUsage(u) {
 
 function _watchStorage() {
   chrome.storage.onChanged.addListener(function(changes, area) {
-    if (area !== 'local') return;
-    if (changes.usageToday)    _renderUsage(changes.usageToday.newValue);
-    if (changes.selectedModel) { document.getElementById('select-model').value = changes.selectedModel.newValue; _updateModelHint(changes.selectedModel.newValue); }
+    if (area === 'local') {
+      if (changes.usageToday) _renderUsage(changes.usageToday.newValue);
+    }
+    if (area === 'sync') {
+      if (changes.selectedModel) {
+        document.getElementById('select-model').value = changes.selectedModel.newValue;
+        _updateModelHint(changes.selectedModel.newValue);
+      }
+      if (changes.language) {
+        var langSelect = document.getElementById('select-language');
+        if (langSelect) langSelect.value = changes.language.newValue;
+      }
+    }
   });
 }
 
