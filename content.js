@@ -41,10 +41,10 @@ var _SYS_DISC_SHORT =
   'the following Reddit comments in 3-5 bullet points. Capture the main ' +
   'opinions, insights, and any consensus or disagreement.';
 
-var _SYS_DISC_LONG =
+var _SYS_DISC_LONG_TPL =
   'You are a helpful assistant. Analyze the following Reddit discussion ' +
   'using this exact plain-text format (no markdown, no asterisks):\n\n' +
-  'Vibe: [one word or short phrase: Consensus / Divided / Heated / Mostly positive / Skeptical / etc.]\n\n' +
+  'Vibe: [one word or short phrase: Consensus / Divided / Heated / Mostly positive / Skeptical / etc.]  ·  {{COUNT}} comments\n\n' +
   '[2-sentence overview of what the discussion is about and the general tone.]\n\n' +
   'Thread Analysis:\n' +
   '• [main viewpoint or camp A]\n' +
@@ -116,6 +116,7 @@ function _summarize() {
     var title = (findPostTitle() || '').trim();
     var body  = (findPostBody()  || '').trim();
 
+    var meta = findPostMeta();
     var isLongPost = body.length > _LONG_POST_CHARS;
     var sysPost = (isLongPost ? _SYS_POST_LONG : _SYS_POST_SHORT) + langSuffix;
 
@@ -148,8 +149,10 @@ function _summarize() {
 
         _panel.setLoading('discussion');
 
-        var isLongThread = comments.length > _LONG_THREAD_COUNT;
-        var sysDisc = (isLongThread ? _SYS_DISC_LONG : _SYS_DISC_SHORT) + langSuffix;
+        var threadCount  = meta.commentCount > 0 ? meta.commentCount : comments.length;
+        var isLongThread = threadCount > _LONG_THREAD_COUNT;
+        var sysDiscLong  = _SYS_DISC_LONG_TPL.replace('{{COUNT}}', threadCount);
+        var sysDisc = (isLongThread ? sysDiscLong : _SYS_DISC_SHORT) + langSuffix;
 
         var commentText = comments
           .slice(0, _MAX_COMMENTS)

@@ -7,6 +7,7 @@
 //   isPostPage()    — true if current URL is a Reddit post page
 //   findPostTitle() — returns post title string (or null)
 //   findPostBody()  — returns post body text (or null if no body / link post)
+//   findPostMeta()  — returns { score, commentCount } from shreddit-post attributes
 //   findComments()  — returns array of comment text strings (up to 50)
 
 'use strict';
@@ -62,6 +63,21 @@ function findPostBody() {
 
   console.debug('[RS] findPostBody: no body (link post or empty)');
   return null;
+}
+
+// ─── Post Meta ────────────────────────────────────────────────────────────────
+// Reads score and comment count from shreddit-post element attributes.
+// Returns { score: number, commentCount: number } — values default to 0 if not found.
+
+function findPostMeta() {
+  var el = document.querySelector('shreddit-post');
+  if (!el) return { score: 0, commentCount: 0 };
+
+  var score        = parseInt(el.getAttribute('score'),         10) || 0;
+  var commentCount = parseInt(el.getAttribute('comment-count'), 10) || 0;
+
+  console.debug('[RS] findPostMeta: score=' + score + ' comments=' + commentCount);
+  return { score: score, commentCount: commentCount };
 }
 
 // ─── Comments ─────────────────────────────────────────────────────────────────
