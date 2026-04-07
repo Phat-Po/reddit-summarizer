@@ -177,13 +177,8 @@ function _stream(opts) {
 function _extractContent() {
   var title    = (findPostTitle()   || '').trim();
   var body     = (findPostBody()    || '').trim();
-  var rawNodes = findComments();
-
-  var comments = [];
-  for (var i = 0; i < rawNodes.length; i++) {
-    var text = (rawNodes[i].textContent || '').trim();
-    if (text) comments.push(text);
-  }
+  // findComments() already returns strings, not DOM nodes
+  var comments = findComments();
 
   return { title: title, body: body, comments: comments };
 }

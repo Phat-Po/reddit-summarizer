@@ -410,6 +410,12 @@ function createPanel() {
     var sec = _sections[section];
     if (!sec) return;
     var c = sec.content;
+    // First chunk: clear loading dots if present
+    var dots = c.querySelector('.dots');
+    if (dots) {
+      c.innerHTML = '';
+      c.className = 'section-content';
+    }
     // Remove existing cursor if present, append text, re-add cursor
     var cursor = c.querySelector('.cursor');
     if (cursor) cursor.remove();
