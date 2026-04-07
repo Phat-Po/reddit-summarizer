@@ -71,13 +71,16 @@ function _summarize() {
       return;
     }
 
-    var content = _extractContent();
+    // Extract title + body now; delay comment extraction until post stream
+    // completes so Reddit has time to render comments into the DOM.
+    var title = (findPostTitle() || '').trim();
+    var body  = (findPostBody()  || '').trim();
 
     // ── Post Summary ──────────────────────────────────────────────────────────
     _panel.setLoading('post');
 
-    var postMsg = 'Title: ' + content.title;
-    if (content.body) postMsg += '\n\nBody:\n' + content.body;
+    var postMsg = 'Title: ' + title;
+    if (body) postMsg += '\n\nBody:\n' + body;
 
     _stream({
       provider:     provider,
@@ -90,7 +93,11 @@ function _summarize() {
       section:      'post',
       onDone: function() {
         // ── Discussion ──────────────────────────────────────────────────────
-        if (content.comments.length === 0) {
+        // Extract comments here — post stream took several seconds, giving
+        // Reddit's JS enough time to render comment nodes into the DOM.
+        var comments = findComments();
+
+        if (comments.length === 0) {
           _panel.setNoContent('discussion');
           _running = false;
           return;
@@ -98,12 +105,12 @@ function _summarize() {
 
         _panel.setLoading('discussion');
 
-        var commentText = content.comments
+        var commentText = comments
           .slice(0, _MAX_COMMENTS)
           .join('\n---\n')
           .slice(0, _MAX_COMMENT_CHARS);
 
-        var discMsg = 'Post title: ' + content.title + '\n\nComments:\n' + commentText;
+        var discMsg = 'Post title: ' + title + '\n\nComments:\n' + commentText;
 
         _stream({
           provider:     provider,
@@ -170,17 +177,6 @@ function _stream(opts) {
     maxTokens:    opts.maxTokens,
     temperature:  opts.temperature
   });
-}
-
-// ─── Content Extraction ───────────────────────────────────────────────────────
-
-function _extractContent() {
-  var title    = (findPostTitle()   || '').trim();
-  var body     = (findPostBody()    || '').trim();
-  // findComments() already returns strings, not DOM nodes
-  var comments = findComments();
-
-  return { title: title, body: body, comments: comments };
 }
 
 // ─── SPA Navigation ───────────────────────────────────────────────────────────
