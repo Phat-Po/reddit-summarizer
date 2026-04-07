@@ -13,13 +13,49 @@
 
 'use strict';
 
+// ─── Thresholds ───────────────────────────────────────────────────────────────
+
+var _LONG_POST_CHARS    = 800;   // body length that triggers Key Takeaways
+var _LONG_THREAD_COUNT  = 50;    // comment count that triggers full thread analysis
+var _MAX_COMMENT_CHARS  = 6000;
+var _MAX_COMMENTS       = 25;
+
 // ─── System Prompts ───────────────────────────────────────────────────────────
 
-var _SYS_POST = 'You are a helpful assistant. Summarize the following Reddit post in 2-3 clear, concise sentences. Focus on the main topic and key points.';
-var _SYS_DISCUSSION = 'You are a helpful assistant. Summarize the key discussion points from the following Reddit comments in 3-5 bullet points. Capture the main opinions, insights, and any consensus or disagreement.';
+var _SYS_POST_SHORT =
+  'You are a helpful assistant. Summarize the following Reddit post in 2-3 ' +
+  'clear, concise sentences. Focus on the main topic and key points.';
 
-var _MAX_COMMENT_CHARS = 6000;
-var _MAX_COMMENTS      = 25;
+var _SYS_POST_LONG =
+  'You are a helpful assistant. Summarize the following Reddit post using ' +
+  'this exact plain-text format (no markdown, no asterisks):\n\n' +
+  '2-3 sentence summary.\n\n' +
+  'Key Takeaways:\n' +
+  '• [most important point]\n' +
+  '• [second point]\n' +
+  '• [third point]\n\n' +
+  'Keep every point to one line. Be concise — no filler.';
+
+var _SYS_DISC_SHORT =
+  'You are a helpful assistant. Summarize the key discussion points from ' +
+  'the following Reddit comments in 3-5 bullet points. Capture the main ' +
+  'opinions, insights, and any consensus or disagreement.';
+
+var _SYS_DISC_LONG =
+  'You are a helpful assistant. Analyze the following Reddit discussion ' +
+  'using this exact plain-text format (no markdown, no asterisks):\n\n' +
+  'Vibe: [one word or short phrase: Consensus / Divided / Heated / Mostly positive / Skeptical / etc.]\n\n' +
+  '[2-sentence overview of what the discussion is about and the general tone.]\n\n' +
+  'Thread Analysis:\n' +
+  '• [main viewpoint or camp A]\n' +
+  '• [main viewpoint or camp B]\n' +
+  '• [third angle or sub-topic if present]\n\n' +
+  'Interaction Pattern: [1 sentence — how people are engaging, e.g. agreement, debate, tangents, humor]\n\n' +
+  'Notable Quotes:\n' +
+  '"[most insightful or representative quote from the comments]"\n' +
+  '"[second notable quote]"\n' +
+  '"[third notable quote]"\n\n' +
+  'Keep every section tight. No filler sentences. Omit a section only if truly not applicable.';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -75,13 +111,13 @@ function _summarize() {
     if (data.language === 'zh-TW') langSuffix = ' Respond in Traditional Chinese (繁體中文).';
     else if (data.language === 'zh-CN') langSuffix = ' Respond in Simplified Chinese (简体中文).';
 
-    var sysPost = _SYS_POST + langSuffix;
-    var sysDisc = _SYS_DISCUSSION + langSuffix;
-
     // Extract title + body now; delay comment extraction until post stream
     // completes so Reddit has time to render comments into the DOM.
     var title = (findPostTitle() || '').trim();
     var body  = (findPostBody()  || '').trim();
+
+    var isLongPost = body.length > _LONG_POST_CHARS;
+    var sysPost = (isLongPost ? _SYS_POST_LONG : _SYS_POST_SHORT) + langSuffix;
 
     // ── Post Summary ──────────────────────────────────────────────────────────
     _panel.setLoading('post');
@@ -95,7 +131,7 @@ function _summarize() {
       apiKey:       apiKey,
       systemPrompt: sysPost,
       userMessage:  postMsg,
-      maxTokens:    400,
+      maxTokens:    isLongPost ? 450 : 400,
       temperature:  0.5,
       section:      'post',
       onDone: function() {
@@ -112,6 +148,9 @@ function _summarize() {
 
         _panel.setLoading('discussion');
 
+        var isLongThread = comments.length > _LONG_THREAD_COUNT;
+        var sysDisc = (isLongThread ? _SYS_DISC_LONG : _SYS_DISC_SHORT) + langSuffix;
+
         var commentText = comments
           .slice(0, _MAX_COMMENTS)
           .join('\n---\n')
@@ -125,7 +164,7 @@ function _summarize() {
           apiKey:       apiKey,
           systemPrompt: sysDisc,
           userMessage:  discMsg,
-          maxTokens:    500,
+          maxTokens:    isLongThread ? 680 : 500,
           temperature:  0.5,
           section:      'discussion',
           onDone: function() { _running = false; },
