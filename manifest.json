@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "FILL_IN: Extension Name",
+  "name": "Reddit Summarizer",
   "version": "1.0.0",
-  "description": "FILL_IN: One-line description",
+  "description": "Automatically summarizes Reddit posts and discussions with AI",
 
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "scripting"],
 
   "host_permissions": [
-    "FILL_IN: https://www.target-site.com/*",
+    "https://www.reddit.com/*",
     "https://api.anthropic.com/*",
     "https://api.openai.com/*"
   ],
@@ -18,11 +18,10 @@
 
   "content_scripts": [
     {
-      "matches": ["FILL_IN: https://www.target-site.com/path/*"],
+      "matches": ["https://www.reddit.com/r/*/comments/*"],
       "js": [
         "model-config.js",
         "selectors.js",
-        "ui/inject-button.js",
         "ui/panel.js",
         "content.js"
       ],
@@ -33,12 +32,11 @@
   "options_page": "settings/settings.html",
 
   "action": {
-    "default_title": "FILL_IN: Extension Name"
+    "default_title": "Reddit Summarizer"
   },
 
   "icons": {
     "16":  "icons/icon16.png",
-    "32":  "icons/icon32.png",
     "48":  "icons/icon48.png",
     "128": "icons/icon128.png"
   }

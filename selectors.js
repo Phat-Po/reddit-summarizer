@@ -1,92 +1,103 @@
-// selectors.js — DOM Selector Abstraction Module
+// selectors.js — Reddit DOM Selector Module
 //
-// ALL DOM queries for the target site go here.
-// When the site updates its markup, only this file needs changing.
+// All DOM queries for reddit.com go here.
+// When Reddit updates its markup, only this file needs changing.
 //
-// Pattern for every function:
-//   1. Try Strategy A (most specific/semantic)
-//   2. Try Strategy B (attribute-based fallback)
-//   3. Try Strategy C (structural/text-walk fallback)
-//   4. Log which strategy matched
-//   5. Return null on total failure (never throw)
-//
-// ── HOW TO FILL THIS IN ────────────────────────────────────────────────────────
-//
-//  1. Open target page in Chrome
-//  2. Open DevTools Console and paste the inspector bookmarklet:
-//     javascript:(function(){var o=[];document.querySelectorAll('label').forEach(function(l){if(l.getAttribute('for'))o.push('LABEL[for="'+l.getAttribute('for')+'"] → "'+l.textContent.trim().slice(0,30)+'"');});document.querySelectorAll('input:not([type=hidden]),textarea').forEach(function(e){o.push('INPUT: id='+e.id+' placeholder='+e.placeholder+' maxlength='+e.maxLength);});document.querySelectorAll('iframe').forEach(function(e){o.push('IFRAME: id='+e.id+' class='+e.className);});prompt('Selectors',o.join('\n'));})();
-//  3. Paste the output here as a comment, then write the selector functions below
-//
-// ─── PASTE YOUR SELECTORS HERE ────────────────────────────────────────────────
-//
-// Example output:
-//   LABEL[for="title"] → "产品标题"
-//   INPUT: id= placeholder=标题不能为空 maxlength=60
-//   IFRAME: id=tinymceId_437_ifr class=tox-edit-area__iframe
-//
-// ─────────────────────────────────────────────────────────────────────────────
+// Functions:
+//   isPostPage()    — true if current URL is a Reddit post page
+//   findPostTitle() — returns post title string (or null)
+//   findPostBody()  — returns post body text (or null if no body)
+//   findComments()  — returns array of comment text strings (top 50)
 
 'use strict';
 
-// ─── FILL IN: Primary target element ─────────────────────────────────────────
-// Example: the main input or content area the extension reads from
+// ─── Page Detection ───────────────────────────────────────────────────────────
 
-function findPrimaryInput() {
-  // Strategy A: most specific — attribute or semantic selector
-  // var el = document.querySelector('FILL_IN');
-  // if (el) { console.debug('[EXT] findPrimaryInput: Strategy A'); return el; }
-
-  // Strategy B: attribute-based fallback
-  // var el = document.querySelector('input[placeholder="FILL_IN"]');
-  // if (el) { console.debug('[EXT] findPrimaryInput: Strategy B'); return el; }
-
-  // Strategy C: walk from a label
-  // var label = _findLabelByText('FILL_IN');
-  // if (label) {
-  //   var input = document.getElementById(label.getAttribute('for'));
-  //   if (input) { console.debug('[EXT] findPrimaryInput: Strategy C'); return input; }
-  // }
-
-  console.warn('[EXT] findPrimaryInput: all strategies failed');
-  return null;
+function isPostPage() {
+  return /^https:\/\/www\.reddit\.com\/r\/[^/]+\/comments\//.test(location.href);
 }
 
-// ─── FILL IN: Button injection anchor ────────────────────────────────────────
-// The element next to which you'll inject your button
+// ─── Post Title ───────────────────────────────────────────────────────────────
 
-function findInjectionAnchor() {
-  // Strategy A
-  // var el = document.querySelector('FILL_IN');
-  // if (el) { console.debug('[EXT] findInjectionAnchor: Strategy A'); return el; }
+function findPostTitle() {
+  var el;
 
-  // Strategy B: walk from label text
-  // var label = _findLabelByText('FILL_IN');
-  // if (label) { console.debug('[EXT] findInjectionAnchor: Strategy B'); return label; }
+  // Strategy A: data-testid on the post container's h1
+  el = document.querySelector('[data-testid="post-title"]');
+  if (el) { console.debug('[RS] findPostTitle: Strategy A'); return el.textContent.trim(); }
 
-  console.warn('[EXT] findInjectionAnchor: all strategies failed');
-  return null;
-}
-
-// ─── ADD MORE functions as needed ─────────────────────────────────────────────
-// Pattern:
-//
-// function findXxx() {
-//   var el;
-//   // Strategy A
-//   el = document.querySelector('...');
-//   if (el) { console.debug('[EXT] findXxx: Strategy A'); return el; }
-//   // Strategy B
-//   ...
-//   console.warn('[EXT] findXxx: all strategies failed');
-//   return null;
-// }
-
-// ─── Internal helpers ─────────────────────────────────────────────────────────
-
-function _findLabelByText(text) {
-  var labels = document.querySelectorAll('label');
-  for (var i = 0; i < labels.length; i++) {
-    if (labels[i].textContent.trim().indexOf(text) !== -1) return labels[i];
+  // Strategy B: shreddit-post custom element attribute
+  el = document.querySelector('shreddit-post');
+  if (el && el.getAttribute('post-title')) {
+    console.debug('[RS] findPostTitle: Strategy B');
+    return el.getAttribute('post-title').trim();
   }
+
+  // Strategy C: first h1 inside the main post container
+  el = document.querySelector('h1');
+  if (el) { console.debug('[RS] findPostTitle: Strategy C'); return el.textContent.trim(); }
+
+  console.warn('[RS] findPostTitle: all strategies failed');
   return null;
+}
+
+// ─── Post Body ────────────────────────────────────────────────────────────────
+
+function findPostBody() {
+  var el;
+
+  // Strategy A: shreddit text body slot
+  el = document.querySelector('[slot="text-body"]');
+  if (el) { console.debug('[RS] findPostBody: Strategy A'); return el.innerText.trim() || null; }
+
+  // Strategy B: data-testid rtjson content
+  el = document.querySelector('[data-testid="post-rtjson-content"]');
+  if (el) { console.debug('[RS] findPostBody: Strategy B'); return el.innerText.trim() || null; }
+
+  // Strategy C: usertext-body class (old/transitional Reddit)
+  el = document.querySelector('.usertext-body');
+  if (el) { console.debug('[RS] findPostBody: Strategy C'); return el.innerText.trim() || null; }
+
+  console.debug('[RS] findPostBody: no body found (link post or empty)');
+  return null;
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+function findComments() {
+  var results = [];
+
+  // Strategy A: shreddit-comment elements
+  var comments = document.querySelectorAll('shreddit-comment');
+  if (comments.length > 0) {
+    console.debug('[RS] findComments: Strategy A (' + comments.length + ' found)');
+    comments.forEach(function(c) {
+      if (results.length >= 50) return;
+      // Text lives in [slot="comment"] or a <p> inside
+      var textEl = c.querySelector('[slot="comment"]') || c.querySelector('p');
+      if (textEl) {
+        var text = textEl.innerText.trim();
+        if (text) results.push(text);
+      }
+    });
+    if (results.length > 0) return results;
+  }
+
+  // Strategy B: data-testid="comment"
+  comments = document.querySelectorAll('[data-testid="comment"]');
+  if (comments.length > 0) {
+    console.debug('[RS] findComments: Strategy B (' + comments.length + ' found)');
+    comments.forEach(function(c) {
+      if (results.length >= 50) return;
+      var textEl = c.querySelector('.text-neutral-content') || c.querySelector('p');
+      if (textEl) {
+        var text = textEl.innerText.trim();
+        if (text) results.push(text);
+      }
+    });
+    if (results.length > 0) return results;
+  }
+
+  console.warn('[RS] findComments: all strategies failed');
+  return results;
 }
