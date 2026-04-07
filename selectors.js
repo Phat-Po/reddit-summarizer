@@ -80,7 +80,7 @@ function findComments() {
       var textEl = c.querySelector('[slot="comment"]');
       if (!textEl) textEl = c.querySelector('p');
       if (textEl) {
-        var text = textEl.innerText.trim();
+        var text = (textEl.textContent || textEl.innerText || '').trim();
         if (text) results.push(text);
       }
     });
