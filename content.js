@@ -9,7 +9,7 @@
 //   3. Auto-trigger AI summarization on load and SPA navigation
 //   4. Stream AI response into panel sections (Post Summary + Discussion)
 //
-// Storage: reads apiKeys, selectedModel, language from chrome.storage.sync
+// Storage: reads apiKeys, selectedModel, language, autoSummarize from chrome.storage.sync
 
 'use strict';
 
@@ -100,8 +100,6 @@ var _running  = false;
 
 // ─── Entry Point ──────────────────────────────────────────────────────────────
 
-console.log('[RS] Content script loaded on', location.href);
-
 _init();
 
 function _init() {
@@ -110,7 +108,9 @@ function _init() {
 
   if (isPostPage()) {
     _panel.show();
-    _summarize();
+    chrome.storage.sync.get(['autoSummarize'], function(data) {
+      if (data.autoSummarize !== false) _summarize();
+    });
   }
 
   _panel.onResummarize(function() {
@@ -136,8 +136,8 @@ function _summarize() {
     var apiKey   = keys[provider];
 
     if (!apiKey) {
-      _panel.setError('post',       'No API key set. Open extension settings to add your key.');
-      _panel.setError('discussion', 'No API key set. Open extension settings to add your key.');
+      _panel.setError('post',       'No API key set. Click the extension icon to open Settings, then click Re-summarize.');
+      _panel.setError('discussion', ' ');
       _running = false;
       return;
     }
@@ -149,7 +149,7 @@ function _summarize() {
     // Extract title + body now; delay comment extraction until post stream
     // completes so Reddit has time to render comments into the DOM.
     var title = (findPostTitle() || '').trim();
-    var body  = (findPostBody()  || '').trim();
+    var body  = (findPostBody()  || '').trim().slice(0, 2000);
 
     var meta   = findPostMeta();
     var labels = _getLabels(data.language);
@@ -268,38 +268,33 @@ function _stream(opts) {
 
 function _startNavObserver() {
   var target = document.querySelector('title') || document.head;
+  var _navTimer = null;
 
-  var observer = new MutationObserver(function() {
+  function _handleNav() {
     if (location.href === _lastUrl) return;
     _lastUrl = location.href;
-    console.log('[RS] Navigation:', location.href);
 
     if (isPostPage()) {
       _running = false;
       _panel.reset();
       _panel.show();
-      _summarize();
+      chrome.storage.sync.get(['autoSummarize'], function(data) {
+        if (data.autoSummarize !== false) _summarize();
+      });
     } else {
       _running = false;
       _panel.hide();
     }
-  });
+  }
 
+  function _debouncedNav() {
+    clearTimeout(_navTimer);
+    _navTimer = setTimeout(_handleNav, 300);
+  }
+
+  var observer = new MutationObserver(_debouncedNav);
   observer.observe(target, { childList: true, subtree: true, characterData: true });
 
-  window.addEventListener('popstate', function() {
-    // popstate fires before MutationObserver on back/forward — trigger manually
-    if (location.href !== _lastUrl) {
-      _lastUrl = location.href;
-      if (isPostPage()) {
-        _running = false;
-        _panel.reset();
-        _panel.show();
-        _summarize();
-      } else {
-        _running = false;
-        _panel.hide();
-      }
-    }
-  });
+  // popstate fires before MutationObserver on back/forward — share the same debounce
+  window.addEventListener('popstate', _debouncedNav);
 }

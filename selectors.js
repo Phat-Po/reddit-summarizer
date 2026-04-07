@@ -29,14 +29,13 @@ function findPostTitle() {
   el = document.querySelector('shreddit-post');
   if (el) {
     val = el.getAttribute('post-title');
-    if (val) { console.debug('[RS] findPostTitle: Strategy A'); return val.trim(); }
+    if (val) { return val.trim(); }
   }
 
   // Strategy B: first h1 on the page
   el = document.querySelector('h1');
-  if (el) { console.debug('[RS] findPostTitle: Strategy B'); return el.textContent.trim(); }
+  if (el) { return el.textContent.trim(); }
 
-  console.warn('[RS] findPostTitle: all strategies failed');
   return null;
 }
 
@@ -51,17 +50,16 @@ function findPostBody() {
   el = document.querySelector('[slot="text-body"]');
   if (el) {
     var text = el.innerText.trim();
-    if (text) { console.debug('[RS] findPostBody: Strategy A'); return text; }
+    if (text) { return text; }
   }
 
   // Strategy B: legacy usertext-body class (old/transitional Reddit)
   el = document.querySelector('.usertext-body');
   if (el) {
     var text2 = el.innerText.trim();
-    if (text2) { console.debug('[RS] findPostBody: Strategy B'); return text2; }
+    if (text2) { return text2; }
   }
 
-  console.debug('[RS] findPostBody: no body (link post or empty)');
   return null;
 }
 
@@ -76,7 +74,6 @@ function findPostMeta() {
   var score        = parseInt(el.getAttribute('score'),         10) || 0;
   var commentCount = parseInt(el.getAttribute('comment-count'), 10) || 0;
 
-  console.debug('[RS] findPostMeta: score=' + score + ' comments=' + commentCount);
   return { score: score, commentCount: commentCount };
 }
 
@@ -90,7 +87,6 @@ function findComments() {
   // Strategy A: shreddit-comment custom elements (verified working)
   var comments = document.querySelectorAll('shreddit-comment');
   if (comments.length > 0) {
-    console.debug('[RS] findComments: Strategy A (' + comments.length + ' found)');
     comments.forEach(function(c) {
       if (results.length >= 50) return;
       var textEl = c.querySelector('[slot="comment"]');
@@ -103,6 +99,5 @@ function findComments() {
     if (results.length > 0) return results;
   }
 
-  console.warn('[RS] findComments: all strategies failed');
   return results;
 }

@@ -45,7 +45,7 @@ function _buildLanguageDropdown() {
 // ─── Load All Settings ────────────────────────────────────────────────────────
 
 function _loadAll() {
-  chrome.storage.sync.get(['apiKeys', 'selectedModel', 'language'], function(data) {
+  chrome.storage.sync.get(['apiKeys', 'selectedModel', 'language', 'autoSummarize'], function(data) {
     var keys = data.apiKeys || {};
     if (keys.anthropic) { document.getElementById('key-anthropic').value = keys.anthropic; _setStatus('anthropic', 'valid', '✓ 已設定'); }
     if (keys.openai)    { document.getElementById('key-openai').value    = keys.openai;    _setStatus('openai',    'valid', '✓ 已設定'); }
@@ -56,6 +56,9 @@ function _loadAll() {
 
     var langSelect = document.getElementById('select-language');
     if (langSelect) langSelect.value = data.language || 'en';
+
+    var autoToggle = document.getElementById('toggle-auto-summarize');
+    if (autoToggle) autoToggle.checked = data.autoSummarize !== false;
   });
 
   chrome.storage.local.get(['usageToday'], function(data) {
@@ -80,6 +83,14 @@ function _bindHandlers() {
     if (!btn) return;
     btn.addEventListener('click', function() { _saveKey(provider, btn); });
   });
+
+  // Auto-summarize toggle
+  var autoToggle = document.getElementById('toggle-auto-summarize');
+  if (autoToggle) {
+    autoToggle.addEventListener('change', function() {
+      chrome.storage.sync.set({ autoSummarize: autoToggle.checked });
+    });
+  }
 
   // Reset usage
   var resetBtn = document.getElementById('btn-reset-usage');
@@ -141,6 +152,10 @@ function _watchStorage() {
       if (changes.language) {
         var langSelect = document.getElementById('select-language');
         if (langSelect) langSelect.value = changes.language.newValue;
+      }
+      if (changes.autoSummarize) {
+        var autoToggle = document.getElementById('toggle-auto-summarize');
+        if (autoToggle) autoToggle.checked = changes.autoSummarize.newValue !== false;
       }
     }
   });
