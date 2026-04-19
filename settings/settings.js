@@ -123,6 +123,12 @@ function _saveKey(provider, btn) {
   _setStatus(provider, 'loading', '⏳ 驗證中…');
   btn.disabled = true;
 
+  // Wake the MV3 service worker before sending the one-shot message.
+  // Without this, Chrome may have already killed the SW after 30s of idle,
+  // causing sendMessage to fail with lastError even for a valid key.
+  var _wake = chrome.runtime.connect({ name: 'keepalive' });
+  _wake.disconnect();
+
   chrome.runtime.sendMessage({ action: 'validateKey', provider: provider, key: key }, function(resp) {
     btn.disabled = false;
     if (chrome.runtime.lastError || !resp) { _setStatus(provider, 'warn', '⚠ 無法驗證'); return; }

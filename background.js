@@ -217,14 +217,12 @@ async function _validateKey(provider, key) {
   try {
     var response;
     if (provider === 'anthropic') {
-      response = await fetch(ANTHROPIC_ENDPOINT, {
-        method: 'POST',
+      response = await fetch('https://api.anthropic.com/v1/models', {
+        method: 'GET',
         headers: {
           'x-api-key': key, 'anthropic-version': ANTHROPIC_VERSION,
-          'anthropic-dangerous-direct-browser-access': 'true',
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
+          'anthropic-dangerous-direct-browser-access': 'true'
+        }
       });
     } else if (provider === 'groq') {
       response = await fetch('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': 'Bearer ' + key } });
