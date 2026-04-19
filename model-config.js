@@ -15,7 +15,12 @@ var EXT_MODEL_OPTIONS = [
   { id: 'gpt-4.1-mini', name: 'GPT-4.1 Mini', provider: 'openai', inputRate: 0.40, outputRate: 1.60 },
   { id: 'gpt-4o-mini',  name: 'GPT-4o Mini',  provider: 'openai', inputRate: 0.15, outputRate: 0.60 },
   { id: 'gpt-4.1',      name: 'GPT-4.1',      provider: 'openai', inputRate: 2.00, outputRate: 8.00 },
-  { id: 'gpt-4o',       name: 'GPT-4o',        provider: 'openai', inputRate: 2.50, outputRate: 10.00 }
+  { id: 'gpt-4o',       name: 'GPT-4o',        provider: 'openai', inputRate: 2.50, outputRate: 10.00 },
+
+  // ── Groq ───────────────────────────────────────────────────────────────────
+  { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile', provider: 'groq', inputRate: 0.59,   outputRate: 0.79 },
+  { id: 'llama-3.1-8b-instant',    name: 'Llama 3.1 8B Instant',    provider: 'groq', inputRate: 0.05,   outputRate: 0.08 },
+  { id: 'openai/gpt-oss-120b',     name: 'GPT OSS 120B',             provider: 'groq', inputRate: 0.15,   outputRate: 0.60 }
 ];
 
 // Build lookup maps used by background.js

@@ -21,6 +21,7 @@ importScripts('model-config.js');
 
 var OPENAI_ENDPOINT    = 'https://api.openai.com/v1/chat/completions';
 var ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
+var GROQ_ENDPOINT      = 'https://api.groq.com/openai/v1/chat/completions';
 var ANTHROPIC_VERSION  = '2023-06-01';
 var REQUEST_TIMEOUT_MS = 30000;
 
@@ -28,6 +29,7 @@ var ERROR_MESSAGES = {
   auth:        'API 金鑰無效，請在設定頁更新',
   rate_anthro: '請求過於頻繁，請稍候 10 秒後再試',
   rate_openai: 'OpenAI API 請求達到速率上限，請稍候再試',
+  rate_groq:   'Groq API 請求達到速率上限，請稍候再試',
   server:      'AI 服務暫時不穩定，請稍後再試',
   overload:    'AI 服務目前負載過高，請稍後再試',
   network:     '無法連線至 AI 服務，請確認網路連線',
@@ -71,6 +73,18 @@ async function handleStreamGenerate(port, request) {
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       stream: true
+    });
+  } else if (provider === 'groq') {
+    url = GROQ_ENDPOINT;
+    headers = { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' };
+    body = JSON.stringify({
+      model: model, max_tokens: maxTokens, temperature: temperature,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userMessage  }
+      ],
+      stream: true,
+      stream_options: { include_usage: true }
     });
   } else {
     url = OPENAI_ENDPOINT;
@@ -212,6 +226,8 @@ async function _validateKey(provider, key) {
         },
         body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] })
       });
+    } else if (provider === 'groq') {
+      response = await fetch('https://api.groq.com/openai/v1/models', { headers: { 'Authorization': 'Bearer ' + key } });
     } else {
       response = await fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } });
     }
@@ -252,7 +268,11 @@ function _postSafe(port, message) {
 
 function _httpError(status, provider) {
   if (status === 401) return ERROR_MESSAGES.auth;
-  if (status === 429) return provider === 'openai' ? ERROR_MESSAGES.rate_openai : ERROR_MESSAGES.rate_anthro;
+  if (status === 429) {
+    if (provider === 'openai')  return ERROR_MESSAGES.rate_openai;
+    if (provider === 'groq')    return ERROR_MESSAGES.rate_groq;
+    return ERROR_MESSAGES.rate_anthro;
+  }
   if (status === 503) return ERROR_MESSAGES.overload;
   return ERROR_MESSAGES.server;
 }

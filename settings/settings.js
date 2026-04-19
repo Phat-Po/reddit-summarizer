@@ -17,7 +17,8 @@ function _buildModelDropdown() {
   MODEL_OPTIONS.forEach(function(m) {
     var opt = document.createElement('option');
     opt.value = m.id;
-    opt.textContent = m.name + ' (' + (m.provider === 'anthropic' ? 'Anthropic' : 'OpenAI') + ')';
+    var providerLabel = m.provider === 'anthropic' ? 'Anthropic' : m.provider === 'groq' ? 'Groq' : 'OpenAI';
+    opt.textContent = m.name + ' (' + providerLabel + ')';
     select.appendChild(opt);
   });
   select.addEventListener('change', function() {
@@ -29,7 +30,10 @@ function _buildModelDropdown() {
 function _updateModelHint(modelId) {
   var m = MODEL_OPTIONS.find(function(m) { return m.id === modelId; });
   var hint = document.getElementById('model-hint');
-  if (hint) hint.textContent = m ? '供應商：' + (m.provider === 'anthropic' ? 'Anthropic' : 'OpenAI') : '';
+  if (hint) {
+    var providerLabel = m ? (m.provider === 'anthropic' ? 'Anthropic' : m.provider === 'groq' ? 'Groq' : 'OpenAI') : '';
+    hint.textContent = m ? '供應商：' + providerLabel : '';
+  }
 }
 
 // ─── Language Dropdown ────────────────────────────────────────────────────────
@@ -49,6 +53,7 @@ function _loadAll() {
     var keys = data.apiKeys || {};
     if (keys.anthropic) { document.getElementById('key-anthropic').value = keys.anthropic; _setStatus('anthropic', 'valid', '✓ 已設定'); }
     if (keys.openai)    { document.getElementById('key-openai').value    = keys.openai;    _setStatus('openai',    'valid', '✓ 已設定'); }
+    if (keys.groq)      { document.getElementById('key-groq').value      = keys.groq;      _setStatus('groq',      'valid', '✓ 已設定'); }
 
     var model = data.selectedModel || MODEL_OPTIONS[0].id;
     document.getElementById('select-model').value = model;
@@ -78,7 +83,7 @@ function _bindHandlers() {
   });
 
   // Save + validate API keys
-  ['anthropic', 'openai'].forEach(function(provider) {
+  ['anthropic', 'openai', 'groq'].forEach(function(provider) {
     var btn = document.getElementById('save-' + provider);
     if (!btn) return;
     btn.addEventListener('click', function() { _saveKey(provider, btn); });
